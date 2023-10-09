@@ -1,0 +1,36 @@
+name: flutter_metronome
+description: A new Flutter package project.
+version: 0.0.1
+homepage:
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  just_audio: ^0.9.35
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+  # To add assets to your package, add an assets section, like this:
+  assets:
+    - assets/audio/bell/
+    - assets/audio/clicks/
+    - assets/audio/cowbells/
+    - assets/audio/digital/
+    - assets/audio/pings/
+    - assets/audio/seiko/
+    - assets/audio/sticks/
+    - assets/audio/vegas/
+    - assets/audio/yamaha/
+ 
