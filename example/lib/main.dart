@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_metronome/metronome.dart';
+import 'package:flutter_metronome/flutter_metronome.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Flutter Metronome',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -31,10 +31,27 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin {
-  final _metronome = Metronome(maxSpeed: 260);
-  TextEditingController _bpmController = TextEditingController();
+  late final Metronome _metronome;
+
+  final List<int> _hitsOptions = [1, 2, 3, 4, 5, 6, 7, 8];
+
+  final List<MetronomeSound> _soundsOptions = const [
+    MetronomeSound.bell,
+    MetronomeSound.clicks,
+    MetronomeSound.cowbells,
+    MetronomeSound.digital,
+    MetronomeSound.pings,
+    MetronomeSound.seiko,
+    MetronomeSound.sticks,
+    MetronomeSound.vegas,
+    MetronomeSound.yamaha,
+  ];
+
+  final TextEditingController _bpmController = TextEditingController();
 
   late AnimationController _animationController;
+
+  int? _beatIndex;
 
   @override
   void initState() {
@@ -42,7 +59,16 @@ class _MyHomePageState extends State<MyHomePage>
 
     _animationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 200),
+    );
+
+    _metronome = Metronome(
+      maxSpeed: 260,
+      onBeat: (index) {
+        setState(() {
+          _beatIndex = index;
+        });
+      },
     );
 
     var initialBPM = 120.0;
@@ -57,16 +83,11 @@ class _MyHomePageState extends State<MyHomePage>
     super.dispose();
   }
 
-  void _updateBPM() {
-    var inputValue = double.tryParse(_bpmController.text);
-    if (inputValue != null) _metronome.setBPM(inputValue);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Metrônomo'),
+        title: const Text('Flutter Metronome'),
       ),
       bottomNavigationBar: _buildBottom(),
       body: Row(
@@ -106,79 +127,68 @@ class _MyHomePageState extends State<MyHomePage>
   Widget _buildBpmSlider() {
     return RotatedBox(
       quarterTurns: -1,
-      child: AnimatedBuilder(
-        animation: _metronome.bpmNotifier,
-        builder: (context, child) {
-          return Slider(
-            // label: '${_metronome.bpmNotifier.value}',
-            value: _metronome.bpmNotifier.value,
-            divisions: (_metronome.maxSpeed - _metronome.minSpeed).toInt(),
-            max: _metronome.maxSpeed,
-            min: _metronome.minSpeed,
-            onChanged: (value) {
-              var result = _metronome.setBPM(value);
-
-              if (result) {
-                _bpmController.text = value.toString();
-              }
-            },
-          );
-        },
+      child: Slider(
+        value: _metronome.bpm,
+        divisions: (_metronome.maxSpeed - _metronome.minSpeed).toInt(),
+        max: _metronome.maxSpeed,
+        min: _metronome.minSpeed,
+        onChanged: _setBPM,
       ),
     );
   }
 
-  Widget _buildCompassList() {
+  void _setBPM(double value) {
+    setState(() {
+      var result = _metronome.setBPM(value);
+      if (result && value.toString() != _bpmController.text) {
+        _bpmController.text = value.toString();
+      }
+    });
+  }
+
+  Widget _buildBeatList() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
             16.0,
             16.0,
             16.0,
             0.0,
           ),
-          child: Text(
-            'Batidas',
-          ),
+          child: Text('Beat', style: Theme.of(context).textTheme.titleMedium),
         ),
         Container(
           height: 60,
-          child: AnimatedBuilder(
-            animation: _metronome.compassoNotifier,
-            builder: (context, child) {
-              return ListView.separated(
-                padding: EdgeInsets.symmetric(horizontal: 16.0),
-                separatorBuilder: (context, index) => SizedBox(width: 12.0),
-                scrollDirection: Axis.horizontal,
-                shrinkWrap: true,
-                physics: ClampingScrollPhysics(),
-                itemCount: _metronome.compassos.length,
-                itemBuilder: (context, index) {
-                  var compasso = _metronome.compassos[index];
-                  var isSelected =
-                      compasso == _metronome.compassoNotifier.value;
-                  return CircleAvatar(
-                    backgroundColor: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.surfaceVariant,
-                    child: IconButton(
-                      onPressed: () {
-                        _metronome.setHits(compasso);
-                      },
-                      icon: Text(
-                        compasso.toString(),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(context).colorScheme.onSurface,
-                                ),
-                      ),
-                    ),
-                  );
-                },
+          child: ListView.separated(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            separatorBuilder: (context, index) => SizedBox(width: 12.0),
+            scrollDirection: Axis.horizontal,
+            shrinkWrap: true,
+            physics: ClampingScrollPhysics(),
+            itemCount: _hitsOptions.length,
+            itemBuilder: (context, index) {
+              var compasso = _hitsOptions[index];
+              var isSelected = compasso == _metronome.hits;
+              return CircleAvatar(
+                backgroundColor: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.surfaceVariant,
+                child: IconButton(
+                  onPressed: () {
+                    _metronome.setHits(compasso);
+                  },
+                  icon: Text(
+                    compasso.toString(),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
+                  ),
+                ),
               );
             },
           ),
@@ -190,15 +200,7 @@ class _MyHomePageState extends State<MyHomePage>
   Widget _buildPlayButton() {
     return Card(
       child: InkWell(
-        onTap: () {
-          if (_metronome.isPlaying) {
-            _animationController.reverse();
-            _metronome.stop();
-          } else {
-            _animationController.forward();
-            _metronome.start();
-          }
-        },
+        onTap: _play,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: AnimatedIcon(
@@ -209,6 +211,19 @@ class _MyHomePageState extends State<MyHomePage>
         ),
       ),
     );
+  }
+
+  void _play() {
+    if (_metronome.isPlaying) {
+      _animationController.reverse();
+      _metronome.stop();
+      setState(() {
+        _beatIndex = null;
+      });
+    } else {
+      _animationController.forward();
+      _metronome.start();
+    }
   }
 
   Widget _buildBpmField(BuildContext context) {
@@ -223,14 +238,7 @@ class _MyHomePageState extends State<MyHomePage>
               child: IconButton(
                 color: Theme.of(context).colorScheme.primary,
                 icon: Icon(Icons.remove),
-                onPressed: () {
-                  var result =
-                      _metronome.setBPM(_metronome.bpmNotifier.value - 1);
-                  if (result) {
-                    _bpmController.text =
-                        _metronome.bpmNotifier.value.toString();
-                  }
-                },
+                onPressed: () => _setBPM(_metronome.bpm - 1),
               ),
             ),
           ),
@@ -258,7 +266,10 @@ class _MyHomePageState extends State<MyHomePage>
                 return null;
               },
               decoration: InputDecoration(border: InputBorder.none),
-              onChanged: (value) => _updateBPM(),
+              onChanged: (value) {
+                var inputValue = double.tryParse(_bpmController.text);
+                if (inputValue != null) _setBPM(inputValue);
+              },
             ),
           ),
           SizedBox(width: 16.0),
@@ -269,14 +280,7 @@ class _MyHomePageState extends State<MyHomePage>
               child: IconButton(
                 color: Theme.of(context).colorScheme.primary,
                 icon: Icon(Icons.add),
-                onPressed: () {
-                  var result =
-                      _metronome.setBPM(_metronome.bpmNotifier.value + 1);
-                  if (result) {
-                    _bpmController.text =
-                        _metronome.bpmNotifier.value.toString();
-                  }
-                },
+                onPressed: () => _setBPM(_metronome.bpm + 1),
               ),
             ),
           ),
@@ -286,83 +290,55 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   Widget _buildSongTile() {
+    var selectedIndex =
+        _soundsOptions.indexWhere((element) => element == _metronome.sound);
+
     return ListTile(
-      title: Text('Áudio'),
+      title: Text('Sound'),
       leading: Icon(Icons.audiotrack_rounded),
-      trailing: Icon(Icons.navigate_next),
-      subtitle: AnimatedBuilder(
-        animation: _metronome.metronomeSoundNotifier,
-        builder: (context, child) {
-          var value = _metronome.metronomeSoundNotifier.value;
-          return Text(
-            value.folder,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: Theme.of(context).colorScheme.primary),
-          );
-        },
+      trailing: Text('${selectedIndex + 1}/${_soundsOptions.length}'),
+      subtitle: Text(
+        _metronome.sound.folder,
+        style: Theme.of(context)
+            .textTheme
+            .bodyMedium
+            ?.copyWith(color: Theme.of(context).colorScheme.primary),
       ),
       onTap: () {
-        var options = [
-          MetronomeSound.bell,
-          MetronomeSound.clicks,
-          MetronomeSound.cowbells,
-          MetronomeSound.digital,
-          MetronomeSound.pings,
-          MetronomeSound.seiko,
-          MetronomeSound.sticks,
-          MetronomeSound.vegas,
-          MetronomeSound.yamaha,
-        ];
-        // DsBottomSheet.showList<MetronomeSound>(
-        //   context: context,
-        //   items: options,
-        //   getTitle: (item, index) {
-        //     return options[index].folder;
-        //   },
-        //   getIcon: (item) {
-        //     return Icon(Icons.music_note);
-        //   },
-        //   onTap: (item, index) {
-        //     _metronome.setSound(options[index]);
-        //   },
-        // );
+        MetronomeSound newSound;
+        if (selectedIndex < (_soundsOptions.length - 1)) {
+          newSound = _soundsOptions[selectedIndex + 1];
+        } else {
+          newSound = _soundsOptions.first;
+        }
+
+        setState(() {
+          _metronome.setSound(newSound);
+        });
       },
     );
   }
 
   Widget _buildHitsIndicator() {
     return Container(
-      margin: EdgeInsets.all(16.0),
+      margin: const EdgeInsets.all(16.0),
       height: 12,
       alignment: Alignment.center,
-      child: AnimatedBuilder(
-        animation: _metronome.compassoNotifier,
-        builder: (context, child) {
-          return AnimatedBuilder(
-            animation: _metronome.bitTimeNotifier,
-            builder: (context, child) {
-              var bitTime = _metronome.bitTimeNotifier.value;
-              return ListView.separated(
-                separatorBuilder: (context, index) => SizedBox(width: 12.0),
-                scrollDirection: Axis.horizontal,
-                shrinkWrap: true,
-                physics: ClampingScrollPhysics(),
-                itemCount: _metronome.compassoNotifier.value,
-                itemBuilder: (context, index) {
-                  var isSelected = (index + 1) == bitTime;
-                  return CircleAvatar(
-                    radius: 6,
-                    backgroundColor: isSelected
-                        ? index == 0
-                            ? Theme.of(context).colorScheme.error
-                            : Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.outlineVariant,
-                  );
-                },
-              );
-            },
+      child: ListView.separated(
+        separatorBuilder: (context, index) => const SizedBox(width: 12.0),
+        scrollDirection: Axis.horizontal,
+        shrinkWrap: true,
+        physics: const ClampingScrollPhysics(),
+        itemCount: _metronome.hits,
+        itemBuilder: (context, index) {
+          var isSelected = (index + 1) == _beatIndex;
+          return CircleAvatar(
+            radius: 6,
+            backgroundColor: isSelected
+                ? index == 0
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.outlineVariant,
           );
         },
       ),
@@ -374,24 +350,24 @@ class _MyHomePageState extends State<MyHomePage>
       clipBehavior: Clip.antiAliasWithSaveLayer,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24.0),
           topRight: Radius.circular(24.0),
         ),
       ),
-      child: SafeArea(
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: Material(
-            color: Colors.transparent,
+      child: Material(
+        color: Theme.of(context).colorScheme.outlineVariant,
+        child: SafeArea(
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
-              title: ListTile(
+              title: const ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.settings),
-                title: Text('Configurações'),
+                title: Text('Settings'),
               ),
               children: [
-                _buildCompassList(),
+                _buildBeatList(),
                 _buildSongTile(),
               ],
             ),
