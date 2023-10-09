@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_metronome/enities/metronome_sound.dart';
 import 'package:flutter_metronome/flutter_metronome.dart';
 
 void main() {
@@ -14,7 +15,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Metronome',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
       home: const MyHomePage(),
@@ -32,38 +33,37 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin {
   late final Metronome _metronome;
-
   final List<int> _hitsOptions = [1, 2, 3, 4, 5, 6, 7, 8];
-
-  final List<MetronomeSound> _soundsOptions = const [
-    MetronomeSound.bell,
-    MetronomeSound.clicks,
-    MetronomeSound.cowbells,
-    MetronomeSound.digital,
-    MetronomeSound.pings,
-    MetronomeSound.seiko,
-    MetronomeSound.sticks,
-    MetronomeSound.vegas,
-    MetronomeSound.yamaha,
+  final List<MetronomeSound> _soundsOptions = [
+    MetronomeSounds.bell,
+    MetronomeSounds.clicks,
+    MetronomeSounds.cowbells,
+    MetronomeSounds.digital,
+    MetronomeSounds.pings,
+    MetronomeSounds.seiko,
+    MetronomeSounds.sticks,
+    MetronomeSounds.vegas,
+    MetronomeSounds.yamaha,
   ];
-
   final TextEditingController _bpmController = TextEditingController();
-
-  late AnimationController _animationController;
-
+  late AnimationController _iconAnimationController;
   int? _beatIndex;
 
   @override
   void initState() {
     super.initState();
 
-    _animationController = AnimationController(
+    _iconAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
     );
 
     _metronome = Metronome(
-      maxSpeed: 260,
+      maxBpm: 400,
+      minBpm: 40,
+      beats: 4,
+      initialBpm: 120.0,
+      sound: MetronomeSounds.digital,
       onBeat: (index) {
         setState(() {
           _beatIndex = index;
@@ -71,9 +71,7 @@ class _MyHomePageState extends State<MyHomePage>
       },
     );
 
-    var initialBPM = 120.0;
-    _bpmController.text = initialBPM.toString();
-    _metronome.setBPM(initialBPM);
+    _setBPM(120.0);
   }
 
   @override
@@ -93,34 +91,33 @@ class _MyHomePageState extends State<MyHomePage>
       body: Row(
         children: [
           Expanded(
-            child: CustomScrollView(
-              slivers: [
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Column(
-                    children: <Widget>[
-                      Expanded(
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _buildBpmField(context),
-                              const SizedBox(height: 16),
-                              _buildPlayButton(),
-                            ],
-                          ),
-                        ),
-                      ),
-                      _buildHitsIndicator(),
-                    ],
-                  ),
-                )
-              ],
-            ),
+            child: _buildBody(context),
           ),
           _buildBpmSlider(),
         ],
       ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        Expanded(
+          child: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildBpmField(context),
+                  const SizedBox(height: 16.0),
+                  _buildPlayButton(),
+                ],
+              ),
+            ),
+          ),
+        ),
+        _buildBeatIndicator(),
+      ],
     );
   }
 
@@ -129,9 +126,9 @@ class _MyHomePageState extends State<MyHomePage>
       quarterTurns: -1,
       child: Slider(
         value: _metronome.bpm,
-        divisions: (_metronome.maxSpeed - _metronome.minSpeed).toInt(),
-        max: _metronome.maxSpeed,
-        min: _metronome.minSpeed,
+        divisions: (_metronome.maxBpm - _metronome.minBpm).toInt(),
+        max: _metronome.maxBpm,
+        min: _metronome.minBpm,
         onChanged: _setBPM,
       ),
     );
@@ -159,25 +156,27 @@ class _MyHomePageState extends State<MyHomePage>
           ),
           child: Text('Beat', style: Theme.of(context).textTheme.titleMedium),
         ),
-        Container(
+        SizedBox(
           height: 60,
           child: ListView.separated(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            separatorBuilder: (context, index) => SizedBox(width: 12.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            separatorBuilder: (context, index) => const SizedBox(width: 12.0),
             scrollDirection: Axis.horizontal,
             shrinkWrap: true,
-            physics: ClampingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             itemCount: _hitsOptions.length,
             itemBuilder: (context, index) {
               var compasso = _hitsOptions[index];
-              var isSelected = compasso == _metronome.hits;
+              var isSelected = compasso == _metronome.beats;
               return CircleAvatar(
                 backgroundColor: isSelected
                     ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.surfaceVariant,
+                    : Theme.of(context).colorScheme.surface,
                 child: IconButton(
                   onPressed: () {
-                    _metronome.setHits(compasso);
+                    setState(() {
+                      _metronome.setBeats(compasso);
+                    });
                   },
                   icon: Text(
                     compasso.toString(),
@@ -205,7 +204,7 @@ class _MyHomePageState extends State<MyHomePage>
           padding: const EdgeInsets.all(16.0),
           child: AnimatedIcon(
             icon: AnimatedIcons.play_pause,
-            progress: _animationController,
+            progress: _iconAnimationController,
             size: 60,
           ),
         ),
@@ -215,13 +214,13 @@ class _MyHomePageState extends State<MyHomePage>
 
   void _play() {
     if (_metronome.isPlaying) {
-      _animationController.reverse();
+      _iconAnimationController.reverse();
       _metronome.stop();
       setState(() {
         _beatIndex = null;
       });
     } else {
-      _animationController.forward();
+      _iconAnimationController.forward();
       _metronome.start();
     }
   }
@@ -237,17 +236,18 @@ class _MyHomePageState extends State<MyHomePage>
               backgroundColor: Theme.of(context).colorScheme.surface,
               child: IconButton(
                 color: Theme.of(context).colorScheme.primary,
-                icon: Icon(Icons.remove),
+                icon: const Icon(Icons.remove),
                 onPressed: () => _setBPM(_metronome.bpm - 1),
               ),
             ),
           ),
-          SizedBox(width: 16.0),
+          const SizedBox(width: 16.0),
           Expanded(
             flex: 2,
             child: TextFormField(
               controller: _bpmController,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               autovalidateMode: AutovalidateMode.always,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineLarge,
@@ -256,30 +256,30 @@ class _MyHomePageState extends State<MyHomePage>
               ],
               validator: (value) {
                 if (double.tryParse(value ?? '') == null) {
-                  return 'min: ${_metronome.minSpeed}, max: ${_metronome.maxSpeed}';
+                  return 'min: ${_metronome.minBpm}, max: ${_metronome.maxBpm}';
                 }
                 var dbValue = double.parse(value!);
-                if (dbValue < _metronome.minSpeed ||
-                    dbValue > _metronome.maxSpeed) {
-                  return 'min: ${_metronome.minSpeed}, max: ${_metronome.maxSpeed}';
+                if (dbValue < _metronome.minBpm ||
+                    dbValue > _metronome.maxBpm) {
+                  return 'min: ${_metronome.minBpm}, max: ${_metronome.maxBpm}';
                 }
                 return null;
               },
-              decoration: InputDecoration(border: InputBorder.none),
+              decoration: const InputDecoration(border: InputBorder.none),
               onChanged: (value) {
                 var inputValue = double.tryParse(_bpmController.text);
                 if (inputValue != null) _setBPM(inputValue);
               },
             ),
           ),
-          SizedBox(width: 16.0),
+          const SizedBox(width: 16.0),
           Expanded(
             flex: 1,
             child: CircleAvatar(
               backgroundColor: Theme.of(context).colorScheme.surface,
               child: IconButton(
                 color: Theme.of(context).colorScheme.primary,
-                icon: Icon(Icons.add),
+                icon: const Icon(Icons.add),
                 onPressed: () => _setBPM(_metronome.bpm + 1),
               ),
             ),
@@ -294,11 +294,11 @@ class _MyHomePageState extends State<MyHomePage>
         _soundsOptions.indexWhere((element) => element == _metronome.sound);
 
     return ListTile(
-      title: Text('Sound'),
-      leading: Icon(Icons.audiotrack_rounded),
+      title: const Text('Sound'),
+      leading: const Icon(Icons.audiotrack_rounded),
       trailing: Text('${selectedIndex + 1}/${_soundsOptions.length}'),
       subtitle: Text(
-        _metronome.sound.folder,
+        _metronome.sound.name ?? ' - ',
         style: Theme.of(context)
             .textTheme
             .bodyMedium
@@ -319,23 +319,24 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  Widget _buildHitsIndicator() {
+  Widget _buildBeatIndicator() {
     return Container(
       margin: const EdgeInsets.all(16.0),
-      height: 12,
+      height: 14,
       alignment: Alignment.center,
       child: ListView.separated(
-        separatorBuilder: (context, index) => const SizedBox(width: 12.0),
+        separatorBuilder: (context, index) => const SizedBox(width: 8.0),
         scrollDirection: Axis.horizontal,
         shrinkWrap: true,
         physics: const ClampingScrollPhysics(),
-        itemCount: _metronome.hits,
+        itemCount: _metronome.beats,
         itemBuilder: (context, index) {
           var isSelected = (index + 1) == _beatIndex;
-          return CircleAvatar(
-            radius: 6,
-            backgroundColor: isSelected
-                ? index == 0
+          return Icon(
+            Icons.circle,
+            size: 14,
+            color: isSelected
+                ? _beatIndex == 1
                     ? Theme.of(context).colorScheme.error
                     : Theme.of(context).colorScheme.primary
                 : Theme.of(context).colorScheme.outlineVariant,
@@ -356,7 +357,7 @@ class _MyHomePageState extends State<MyHomePage>
         ),
       ),
       child: Material(
-        color: Theme.of(context).colorScheme.outlineVariant,
+        color: Theme.of(context).colorScheme.primaryContainer,
         child: SafeArea(
           child: Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
