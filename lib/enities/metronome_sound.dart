@@ -12,16 +12,6 @@ class MetronomeSound {
   });
 }
 
-class MetronomeAsset {
-  final String asset;
-  final String package;
-
-  const MetronomeAsset({
-    required this.asset,
-    required this.package,
-  });
-}
-
 abstract class MetronomeSounds {
   static final bell = MetronomeSound(
     name: 'bell',
