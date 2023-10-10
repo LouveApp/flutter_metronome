@@ -11,11 +11,8 @@ class JustAudioImpl extends AudioPlayerInterface {
 
   @override
   Future<void> play() async {
+    await _player.seek(const Duration(milliseconds: 0));
     _player.play();
-    Future.delayed(const Duration(milliseconds: 120), () {
-      _player.pause();
-      _player.seek(Duration.zero);
-    });
   }
 
   @override
