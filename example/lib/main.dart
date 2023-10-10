@@ -122,14 +122,17 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   Widget _buildBpmSlider() {
+    var divisions = (_metronome.maxBpm - _metronome.minBpm).toInt();
     return RotatedBox(
       quarterTurns: -1,
       child: Slider(
         value: _metronome.bpm,
-        divisions: (_metronome.maxBpm - _metronome.minBpm).toInt(),
+        divisions: divisions,
         max: _metronome.maxBpm,
         min: _metronome.minBpm,
-        onChanged: _setBPM,
+        onChanged: (value) {
+          _setBPM(value.toInt().toDouble());
+        },
       ),
     );
   }
@@ -349,9 +352,8 @@ class _MyHomePageState extends State<MyHomePage>
   Widget _buildBottom() {
     return Container(
       clipBehavior: Clip.antiAliasWithSaveLayer,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.only(
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.only(
           topLeft: Radius.circular(24.0),
           topRight: Radius.circular(24.0),
         ),

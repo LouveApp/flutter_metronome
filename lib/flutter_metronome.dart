@@ -2,18 +2,19 @@ library flutter_metronome;
 
 import 'dart:async';
 
+import 'package:flutter_metronome/audio_player/interfaces/audio_player_interface.dart';
+import 'package:flutter_metronome/audio_player/just_audio_impl.dart';
 import 'package:flutter_metronome/enities/metronome_sound.dart';
-import 'package:just_audio/just_audio.dart';
 
 class Metronome {
-  late int _beatIndex;
   late double _bpm;
-  late int _beats;
   late final double _maxBpm;
   late final double _minBpm;
+  late int _beats;
+  late int _beatIndex;
   late MetronomeSound _sound;
-  final AudioPlayer _audioPlayerHigh = AudioPlayer();
-  final AudioPlayer _audioPlayerLow = AudioPlayer();
+  final AudioPlayerInterface _audioPlayerHigh = JustAudioImpl();
+  final AudioPlayerInterface _audioPlayerLow = JustAudioImpl();
   Timer? _timer;
 
   final Function(int index)? onBeat;
@@ -69,8 +70,8 @@ class Metronome {
     if (isPlaying) {
       isPlaying = false;
       _beatIndex = 0;
-      await _audioPlayerHigh.pause();
-      await _audioPlayerLow.pause();
+      await _audioPlayerHigh.stop();
+      await _audioPlayerLow.stop();
       _stopTimer();
     }
   }
@@ -86,8 +87,8 @@ class Metronome {
 
     _sound = metronomeSound;
 
-    await _audioPlayerHigh.setAudioSource(_sound.high);
-    await _audioPlayerLow.setAudioSource(_sound.low);
+    await _audioPlayerHigh.setSource(_sound.high);
+    await _audioPlayerLow.setSource(_sound.low);
 
     if (keepPlaying) {
       start();
@@ -98,13 +99,7 @@ class Metronome {
     _beatIndex = _beatIndex < _beats ? _beatIndex + 1 : 1;
     onBeat?.call(_beatIndex);
     var audioPlayer = _beatIndex == 1 ? _audioPlayerHigh : _audioPlayerLow;
-
     audioPlayer.play();
-
-    Future.delayed(const Duration(milliseconds: 120), () async {
-      await audioPlayer.pause();
-      audioPlayer.seek(Duration.zero);
-    });
   }
 
   void _startTimer() {
@@ -120,8 +115,8 @@ class Metronome {
 
   void dispose() async {
     _stopTimer();
-    await _audioPlayerHigh.pause();
-    await _audioPlayerLow.pause();
+    await _audioPlayerHigh.stop();
+    await _audioPlayerLow.stop();
     await _audioPlayerHigh.dispose();
     await _audioPlayerLow.dispose();
   }
