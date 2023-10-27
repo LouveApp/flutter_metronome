@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'package:flutter_metronome/audio_player/interfaces/audio_player_interface.dart';
 import 'package:flutter_metronome/audio_player/just_audio_impl.dart';
-import 'package:flutter_metronome/enities/metronome_sound.dart';
+import 'package:flutter_metronome/entities/metronome_sound.dart';
 
 class Metronome {
   late double _bpm;
@@ -41,9 +41,6 @@ class Metronome {
     _beatIndex = 0;
 
     setSound(sound ?? MetronomeSounds.digital);
-
-    _audioPlayerHigh.setVolume(2.0);
-    _audioPlayerLow.setVolume(2.0);
   }
 
   bool setBPM(double bpm) {

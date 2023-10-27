@@ -1,5 +1,5 @@
 
-import 'package:flutter_metronome/enities/metronome_sound.dart';
+import 'package:flutter_metronome/entities/metronome_sound.dart';
 
 abstract class AudioPlayerInterface {
   Future<void> setSource(MetronomeAudioSource source);

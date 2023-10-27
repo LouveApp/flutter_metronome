@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_metronome/enities/metronome_sound.dart';
+import 'package:flutter_metronome/entities/metronome_sound.dart';
 import 'package:flutter_metronome/flutter_metronome.dart';
 
 void main() {
