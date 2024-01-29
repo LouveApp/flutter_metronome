@@ -116,6 +116,7 @@ class _MyHomePageState extends State<MyHomePage>
             ),
           ),
         ),
+        _buildTapBpm(),
         _buildBeatIndicator(),
       ],
     );
@@ -377,6 +378,36 @@ class _MyHomePageState extends State<MyHomePage>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTapBpm() {
+    return Column(
+      children: [
+        SizedBox(
+          height: 140,
+          width: 140,
+          child: FilledButton(
+            onPressed: () {
+              var bpm = Metronome.bpmCalculator.tap();
+
+              if (bpm != 0) {
+                setState(() {
+                  _setBPM(bpm.toInt().toDouble());
+                });
+              }
+            },
+            child: ValueListenableBuilder<double?>(
+              valueListenable: Metronome.bpmCalculator.bpmNotifier,
+              builder: (context, bpm, y) {
+                return bpm != null
+                    ? Text('Calculando... ($bpm)')
+                    : Text('Toque');
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

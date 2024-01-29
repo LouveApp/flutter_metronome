@@ -2,9 +2,12 @@ library flutter_metronome;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_metronome/audio_player/interfaces/audio_player_interface.dart';
 import 'package:flutter_metronome/audio_player/just_audio_impl.dart';
 import 'package:flutter_metronome/entities/metronome_sound.dart';
+
+part './bpm_calculator.dart';
 
 class Metronome {
   late double _bpm;
@@ -42,6 +45,8 @@ class Metronome {
 
     setSound(sound ?? MetronomeSounds.digital);
   }
+
+  static _BpmCalculator get bpmCalculator => _BpmCalculator.instance;
 
   bool setBPM(double bpm) {
     if (bpm < _minBpm || bpm > _maxBpm) {

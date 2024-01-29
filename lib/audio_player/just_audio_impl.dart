@@ -13,7 +13,7 @@ class JustAudioImpl extends AudioPlayerInterface {
   @override
   Future<void> play() async {
     _player
-      ..seek(Duration.zero)
+      ..load()
       ..play();
   }
 
